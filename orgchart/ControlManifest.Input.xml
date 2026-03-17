@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="lto" constructor="orgchart" version="0.0.1" display-name-key="orgchart" description-key="orgchart_desc" control-type="virtual">
+    <external-service-usage enabled="false">
+    </external-service-usage>
+    <!--
+      entities  : JSON array of objects with entity_id (string) and entity_name (string).
+                  Example: [{"entity_id":"E1","entity_name":"Parent Co"},{"entity_id":"E2","entity_name":"Child Co"}]
+                  In Canvas Apps use: JSON(entitiesCollection)
+
+      shareholdings : JSON array of objects with parent (entity_id), child (entity_id) and share (0-1).
+                      Example: [{"parent":"E1","child":"E2","share":0.75}]
+                      In Canvas Apps use: JSON(shareholdingsCollection)
+    -->
+    <property name="entities"
+              display-name-key="Entities"
+              description-key="entities_desc"
+              of-type="SingleLine.Text"
+              usage="input"
+              required="true" />
+    <property name="shareholdings"
+              display-name-key="Shareholdings"
+              description-key="shareholdings_desc"
+              of-type="SingleLine.Text"
+              usage="input"
+              required="true" />
+    <resources>
+      <code path="index.ts" order="1"/>
+      <platform-library name="React" version="16.14.0" />
+      <platform-library name="Fluent" version="9.68.0" />
+    </resources>
+  </control>
+</manifest>

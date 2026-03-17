@@ -194,7 +194,7 @@ function buildExportSvg(
             `<rect width="${CARD_W}" height="${CARD_H}" rx="${CARD_RADIUS}" fill="${CARD_BG}" stroke="${ACCENT_COLOR}" stroke-width="1.5"/>`,
             `<path d="${ap}" fill="${ACCENT_COLOR}"/>`,
             `<text x="${CARD_W / 2}" y="${ACCENT_H + 24}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="700" fill="${TEXT_PRIMARY}" font-family="Segoe UI,system-ui,sans-serif">${name}</text>`,
-            `<line x1="16" x2="${CARD_W - 16}" y1="${ACCENT_H + 38}" y2="${ACCENT_H + 38}" stroke="#EBEBF0" stroke-width="1"/>`,
+            `<line x1="16" x2="${CARD_W - 16}" y1="${ACCENT_H + 38}" y2="${ACCENT_H + 38}" stroke="#CBD6FF" stroke-width="1"/>`,
             `<text x="${CARD_W / 2}" y="${ACCENT_H + 54}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="${TEXT_SECONDARY}" font-family="Segoe UI,system-ui,sans-serif">${eid}</text>`,
             `</g>`,
         ].join('');
@@ -308,14 +308,18 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
         return () => el.removeEventListener('wheel', onWheel);
     }, []);
 
-    const onMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
         if (e.button !== 0) return;
         dragging.current = true;
         lastPt.current = { x: e.clientX, y: e.clientY };
+        // Capture the pointer so that pointermove/pointerup are delivered to
+        // this element even when the cursor leaves it or the Canvas App iframe
+        // boundary — the Canvas App event layer cannot steal captured events.
+        (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
         e.preventDefault();
     };
 
-    const onMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
         if (!dragging.current) return;
         const dx = e.clientX - lastPt.current.x;
         const dy = e.clientY - lastPt.current.y;
@@ -323,7 +327,10 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
         setTransform(t => ({ ...t, x: t.x + dx, y: t.y + dy }));
     };
 
-    const stopDrag = () => { dragging.current = false; };
+    const stopDrag = (e: React.PointerEvent<SVGSVGElement>) => {
+        dragging.current = false;
+        (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
+    };
 
     const handleZoomIn = React.useCallback(() => {
         setTransform(t => ({ ...t, scale: Math.min(MAX_ZOOM, t.scale * 1.25) }));
@@ -368,10 +375,10 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
             width={w}
             height={h}
             style={{ display: 'block', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={stopDrag}
-            onMouseLeave={stopDrag}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={stopDrag}
+            onPointerCancel={stopDrag}
         >
             <defs>
                 {/* Dot-corner grid pattern */}

@@ -49,8 +49,8 @@ const IconButton: React.FC<IconButtonProps> = ({ onClick, disabled = false, titl
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: 'none',
-                background: hovered && !disabled ? '#F0F0F8' : 'transparent',
-                color: disabled ? '#C8C6C4' : accent ? ACCENT_COLOR : '#323130',
+                background: hovered && !disabled ? '#E8F0FF' : 'transparent',
+                color: disabled ? '#BABABA' : accent ? ACCENT_COLOR : '#2F2F2F',
                 cursor: disabled ? 'default' : 'pointer',
                 padding: 0,
                 borderRadius: 4,
@@ -66,7 +66,7 @@ const IconButton: React.FC<IconButtonProps> = ({ onClick, disabled = false, titl
 // ─── Thin horizontal divider ──────────────────────────────────────────────────
 
 const Divider: React.FC = () => (
-    <div style={{ width: 22, height: 1, background: '#EDEBE9', margin: '2px 0' }} />
+    <div style={{ width: 22, height: 1, background: '#CBD6FF', margin: '2px 0' }} />
 );
 
 // ─── ControlPanel ─────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#605E5C',
+                color: '#2F2F2F',
                 fontFamily: "'Segoe UI', system-ui, sans-serif",
                 lineHeight: '20px',
                 width: 36,

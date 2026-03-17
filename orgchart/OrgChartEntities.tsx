@@ -26,13 +26,13 @@ export const GRID_SIZE = 28;
 export const CARD_RADIUS = 10;
 export const ACCENT_H = 8;
 
-// Power Platform indigo palette
-export const ACCENT_COLOR = '#5B5FC7';
+// HARTMANN brand color palette (https://design.hartmann.info/en/design-basics/color)
+export const ACCENT_COLOR = '#0045FF'; // HARTMANN Bright Blue
 export const CARD_BG = '#FFFFFF';
-export const GRID_BG = '#F5F5FA';
-export const GRID_LINE = '#DDDDE8';
-export const TEXT_PRIMARY = '#11100F';
-export const TEXT_SECONDARY = '#8A8886';
+export const GRID_BG = '#F0F4FF';     // Bright Blue tint background
+export const GRID_LINE = '#CBD6FF';   // Bright Blue tint grid lines
+export const TEXT_PRIMARY = '#2F2F2F'; // HARTMANN Dark Gray
+export const TEXT_SECONDARY = '#BABABA'; // HARTMANN Light Gray
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ const EntityCard: React.FC<EntityCardProps> = ({ entity, pos }) => (
         <line
             x1={16} x2={CARD_W - 16}
             y1={ACCENT_H + 38} y2={ACCENT_H + 38}
-            stroke="#EBEBF0" strokeWidth={1}
+            stroke="#CBD6FF" strokeWidth={1}
         />
 
         {/* Entity ID (secondary, smaller) */}

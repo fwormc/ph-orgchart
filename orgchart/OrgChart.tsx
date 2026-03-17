@@ -1,19 +1,16 @@
 import * as React from 'react';
 import { jsPDF } from 'jspdf';
+import { ControlPanel } from './ControlPanel';
+import {
+    Entity, Shareholding, NodePos, OrgChartEntities,
+    CARD_W, CARD_H, H_GAP, V_GAP, GRID_SIZE, CARD_RADIUS, ACCENT_H,
+    ACCENT_COLOR, CARD_BG, GRID_BG, GRID_LINE, TEXT_PRIMARY, TEXT_SECONDARY,
+    truncate, topRoundedRectPath,
+} from './OrgChartEntities';
 
 // ─── Public types (used by index.ts) ─────────────────────────────────────────
 
-export interface Entity {
-    entity_id: string;
-    entity_name: string;
-}
-
-export interface Shareholding {
-    child: string;
-    parent: string;
-    /** Ownership fraction between 0 and 1. */
-    share: number;
-}
+export type { Entity, Shareholding };
 
 export interface IOrgChartProps {
     entitiesJson: string;
@@ -21,24 +18,6 @@ export interface IOrgChartProps {
     width: number;
     height: number;
 }
-
-// ─── Layout constants ─────────────────────────────────────────────────────────
-
-const CARD_W = 200;
-const CARD_H = 88;
-const H_GAP = 64;
-const V_GAP = 96;
-const GRID_SIZE = 28;
-const CARD_RADIUS = 10;
-const ACCENT_H = 8;
-
-// Power Platform indigo palette
-const ACCENT_COLOR = '#5B5FC7';
-const CARD_BG = '#FFFFFF';
-const GRID_BG = '#F5F5FA';
-const GRID_LINE = '#DDDDE8';
-const TEXT_PRIMARY = '#11100F';
-const TEXT_SECONDARY = '#8A8886';
 
 const MIN_ZOOM = 0.15;
 const MAX_ZOOM = 4;
@@ -54,25 +33,11 @@ function safeParseJson<T>(json: string): T[] {
     }
 }
 
-function truncate(text: string, max: number): string {
-    return text.length > max ? text.slice(0, max - 1) + '\u2026' : text;
-}
-
 function escapeXml(str: string): string {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/**
- * Path string for a rectangle whose top-left and top-right corners are
- * rounded with radius `r` and whose bottom edge is straight.
- */
-function topRoundedRectPath(w: number, h: number, r: number): string {
-    return `M 0 ${r} Q 0 0 ${r} 0 L ${w - r} 0 Q ${w} 0 ${w} ${r} L ${w} ${h} L 0 ${h} Z`;
-}
-
 // ─── Layout algorithm ─────────────────────────────────────────────────────────
-
-interface NodePos { x: number; y: number; }
 
 /**
  * Hierarchical (Sugiyama-inspired) layout for a directed acyclic graph.
@@ -278,132 +243,6 @@ function svgToDataUrl(svgString: string, pxW: number, pxH: number): Promise<stri
     });
 }
 
-// ─── Entity card ──────────────────────────────────────────────────────────────
-
-interface EntityCardProps {
-    entity: Entity;
-    pos: NodePos;
-}
-
-const EntityCard: React.FC<EntityCardProps> = ({ entity, pos }) => (
-    <g transform={`translate(${pos.x},${pos.y})`}>
-        {/* Soft drop-shadow (simulated with an offset grey rect) */}
-        <rect
-            x={2} y={4}
-            width={CARD_W} height={CARD_H}
-            rx={CARD_RADIUS}
-            fill="rgba(0,0,0,0.07)"
-        />
-
-        {/* Card body */}
-        <rect
-            width={CARD_W} height={CARD_H}
-            rx={CARD_RADIUS}
-            fill={CARD_BG}
-            stroke={ACCENT_COLOR}
-            strokeWidth={1.5}
-        />
-
-        {/* Colour accent strip (top corners rounded, bottom straight) */}
-        <path
-            d={topRoundedRectPath(CARD_W, ACCENT_H, CARD_RADIUS)}
-            fill={ACCENT_COLOR}
-        />
-
-        {/* Entity name */}
-        <text
-            x={CARD_W / 2}
-            y={ACCENT_H + 24}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={13}
-            fontWeight="700"
-            fill={TEXT_PRIMARY}
-            fontFamily="'Segoe UI',system-ui,sans-serif"
-        >
-            {truncate(entity.entity_name, 22)}
-        </text>
-
-        {/* Separator line */}
-        <line
-            x1={16} x2={CARD_W - 16}
-            y1={ACCENT_H + 38} y2={ACCENT_H + 38}
-            stroke="#EBEBF0" strokeWidth={1}
-        />
-
-        {/* Entity ID (secondary, smaller) */}
-        <text
-            x={CARD_W / 2}
-            y={ACCENT_H + 54}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={10}
-            fill={TEXT_SECONDARY}
-            fontFamily="'Segoe UI',system-ui,sans-serif"
-        >
-            {truncate(entity.entity_id, 28)}
-        </text>
-    </g>
-);
-
-// ─── Connection (edge) ────────────────────────────────────────────────────────
-
-interface ConnectionProps {
-    shareholding: Shareholding;
-    parentPos: NodePos;
-    childPos: NodePos;
-}
-
-const Connection: React.FC<ConnectionProps> = ({ shareholding, parentPos, childPos }) => {
-    const x1 = parentPos.x + CARD_W / 2;
-    const y1 = parentPos.y + CARD_H;
-    const x2 = childPos.x + CARD_W / 2;
-    const y2 = childPos.y;
-    const midY = (y1 + y2) / 2;
-
-    // Cubic bezier: leave parent bottom vertically, arrive at child top vertically
-    const d = `M ${x1} ${y1} C ${x1} ${midY},${x2} ${midY},${x2} ${y2}`;
-
-    const pct = `${(shareholding.share * 100).toFixed(1)}%`;
-    const lx = (x1 + x2) / 2;
-    const ly = midY;
-    const pillW = 44;
-    const pillH = 18;
-
-    return (
-        <g>
-            <path
-                d={d}
-                fill="none"
-                stroke={ACCENT_COLOR}
-                strokeWidth={1.5}
-                markerEnd="url(#oc-arrow)"
-                opacity={0.8}
-            />
-            {/* Ownership percentage pill */}
-            <rect
-                x={lx - pillW / 2} y={ly - pillH / 2}
-                width={pillW} height={pillH}
-                rx={pillH / 2}
-                fill={CARD_BG}
-                stroke={ACCENT_COLOR}
-                strokeWidth={1}
-            />
-            <text
-                x={lx} y={ly}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize={9.5}
-                fontWeight="600"
-                fill={ACCENT_COLOR}
-                fontFamily="'Segoe UI',system-ui,sans-serif"
-            >
-                {pct}
-            </text>
-        </g>
-    );
-};
-
 // ─── OrgChart (root component) ────────────────────────────────────────────────
 
 export const OrgChart: React.FC<IOrgChartProps> = ({
@@ -426,11 +265,9 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
     const w = width > 0 ? width : 600;
     const h = height > 0 ? height : 400;
 
-    // Auto-fit the chart to fill the viewport the first time data arrives.
-    React.useEffect(() => {
-        if (initialized.current || positions.size === 0 || w <= 0 || h <= 0) return;
-        initialized.current = true;
-
+    // Fit all entities into the viewport — used for initial auto-fit and the Centre button.
+    const fitToView = React.useCallback(() => {
+        if (positions.size === 0 || w <= 0 || h <= 0) return;
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         for (const p of positions.values()) {
             minX = Math.min(minX, p.x);
@@ -438,18 +275,21 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
             minY = Math.min(minY, p.y);
             maxY = Math.max(maxY, p.y + CARD_H);
         }
-
         const padding = 48;
         const chartW = maxX - minX;
         const chartH = maxY - minY;
         const scale = Math.min(1, Math.min((w - 2 * padding) / chartW, (h - 2 * padding) / chartH));
-
-        // Centre of the chart in chart-space
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
-
         setTransform({ x: -cx * scale, y: -cy * scale, scale });
     }, [positions, w, h]);
+
+    // Auto-fit the first time data is available.
+    React.useEffect(() => {
+        if (initialized.current || positions.size === 0) return;
+        initialized.current = true;
+        fitToView();
+    }, [positions, fitToView]);
 
     // Non-passive wheel listener so we can call preventDefault() and prevent
     // the page from scrolling while the user zooms the chart.
@@ -484,6 +324,14 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
     };
 
     const stopDrag = () => { dragging.current = false; };
+
+    const handleZoomIn = React.useCallback(() => {
+        setTransform(t => ({ ...t, scale: Math.min(MAX_ZOOM, t.scale * 1.25) }));
+    }, []);
+
+    const handleZoomOut = React.useCallback(() => {
+        setTransform(t => ({ ...t, scale: Math.max(MIN_ZOOM, t.scale / 1.25) }));
+    }, []);
 
     const isEmpty = entities.length === 0;
 
@@ -572,52 +420,25 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
                         No data — provide entities and shareholdings
                     </text>
                 ) : (
-                    <>
-                        {/* Edges drawn first so cards render on top */}
-                        {shareholdings.map((s, i) => {
-                            const pp = positions.get(s.parent);
-                            const cp = positions.get(s.child);
-                            return (pp && cp)
-                                ? <Connection key={i} shareholding={s} parentPos={pp} childPos={cp} />
-                                : null;
-                        })}
-
-                        {/* Entity cards */}
-                        {entities.map(e => {
-                            const pos = positions.get(e.entity_id);
-                            return pos
-                                ? <EntityCard key={e.entity_id} entity={e} pos={pos} />
-                                : null;
-                        })}
-                    </>
+                    <OrgChartEntities
+                        entities={entities}
+                        shareholdings={shareholdings}
+                        positions={positions}
+                    />
                 )}
             </g>
         </svg>
-        <button
-            onClick={handleExport}
-            disabled={exporting || isEmpty}
-            style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                background: exporting ? '#8E90D0' : ACCENT_COLOR,
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '7px 16px',
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-                cursor: exporting || isEmpty ? 'default' : 'pointer',
-                boxShadow: '0 2px 8px rgba(91,95,199,0.30)',
-                letterSpacing: '0.02em',
-                zIndex: 10,
-                opacity: isEmpty ? 0.5 : 1,
-                transition: 'background 0.15s',
-            }}
-        >
-            {exporting ? 'Exporting\u2026' : '\u2193 Export PDF'}
-        </button>
+        <ControlPanel
+            zoomScale={transform.scale}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFit={fitToView}
+            onExport={handleExport}
+            exporting={exporting}
+            disabled={isEmpty}
+            containerWidth={w}
+            containerHeight={h}
+        />
         </div>
     );
 };

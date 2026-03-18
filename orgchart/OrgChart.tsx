@@ -223,23 +223,24 @@ function buildExportSvg(
 
 function svgToDataUrl(svgString: string, pxW: number, pxH: number): Promise<string> {
     return new Promise((resolve, reject) => {
-        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
+        // Use a base-64 data URI instead of a blob URL.
+        // Power Apps Canvas App iframes block blob: URLs via CSP (img-src does not
+        // include blob:), so URL.createObjectURL would silently fail there.
+        const b64 = btoa(unescape(encodeURIComponent(svgString)));
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
             canvas.width = pxW;
             canvas.height = pxH;
             const ctx = canvas.getContext('2d');
-            if (!ctx) { URL.revokeObjectURL(url); reject(new Error('No 2D context')); return; }
+            if (!ctx) { reject(new Error('No 2D context')); return; }
             ctx.fillStyle = GRID_BG;
             ctx.fillRect(0, 0, pxW, pxH);
             ctx.drawImage(img, 0, 0, pxW, pxH);
-            URL.revokeObjectURL(url);
             resolve(canvas.toDataURL('image/png'));
         };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('SVG render failed')); };
-        img.src = url;
+        img.onerror = () => { reject(new Error('SVG render failed')); };
+        img.src = `data:image/svg+xml;base64,${b64}`;
     });
 }
 
@@ -361,7 +362,17 @@ export const OrgChart: React.FC<IOrgChartProps> = ({
                     format: [pdfW, pdfH],
                 });
                 pdf.addImage(dataUrl, 'PNG', 0, 0, pdfW, pdfH);
-                pdf.save('orgchart.pdf');
+                // pdf.save() uses URL.createObjectURL internally (via FileSaver),
+                // which is also blocked by the Power Apps CSP/sandbox. Instead,
+                // generate a base-64 data URI and trigger the download via an
+                // anchor element — no blob URL required.
+                const dataUri = pdf.output('datauristring');
+                const a = document.createElement('a');
+                a.href = dataUri;
+                a.setAttribute('download', 'orgchart.pdf');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
                 setExporting(false);
                 return undefined;
             })

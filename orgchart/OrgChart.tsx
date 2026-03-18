@@ -33,8 +33,8 @@ function safeParseJson<T>(json: string): T[] {
     }
 }
 
-function escapeXml(str: string): string {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function escapeXml(str: string | number | null | undefined): string {
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ─── Layout algorithm ─────────────────────────────────────────────────────────
@@ -185,8 +185,10 @@ function buildExportSvg(
     const cardSvg = entities.map(e => {
         const pos = positions.get(e.entity_id);
         if (!pos) return '';
-        const name = escapeXml(truncate(e.entity_name, 22));
-        const eid  = escapeXml(truncate(e.entity_id, 28));
+        // Power Apps can deliver field values as numbers or null/undefined;
+        // coerce to string before passing to truncate/escapeXml.
+        const name = escapeXml(truncate(String(e.entity_name ?? ''), 22));
+        const eid  = escapeXml(truncate(String(e.entity_id  ?? ''), 28));
         const ap = topRoundedRectPath(CARD_W, ACCENT_H, CARD_RADIUS);
         return [
             `<g transform="translate(${pos.x},${pos.y})">`,

@@ -36,8 +36,9 @@ export const TEXT_SECONDARY = '#BABABA'; // HARTMANN Light Gray
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-export function truncate(text: string, max: number): string {
-    return text.length > max ? text.slice(0, max - 1) + '\u2026' : text;
+export function truncate(text: string | number | null | undefined, max: number): string {
+    const s = String(text ?? '');
+    return s.length > max ? s.slice(0, max - 1) + '\u2026' : s;
 }
 
 export function topRoundedRectPath(w: number, h: number, r: number): string {

@@ -27,7 +27,7 @@ export const CARD_RADIUS = 10;
 export const ACCENT_H = 8;
 
 // HARTMANN brand color palette (https://design.hartmann.info/en/design-basics/color)
-export const ACCENT_COLOR = '#0045FF'; // HARTMANN Bright Blue
+export const ACCENT_COLOR = '#71ce07'; // HARTMANN Bright Blue
 export const CARD_BG = '#FFFFFF';
 export const GRID_BG = '#F0F4FF';     // Bright Blue tint background
 export const GRID_LINE = '#CBD6FF';   // Bright Blue tint grid lines
